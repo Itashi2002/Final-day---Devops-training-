@@ -1,0 +1,15 @@
+- name: my first playbook
+  hosts: all
+  become: true
+  become_user: root
+  tasks:
+      
+  - name: Install apache2
+    loop:
+      - apache2
+      - openjdk-17-jdk
+      - wget
+    package:
+      name: "{{ item }}"
+      state: present
+      update_cache: true

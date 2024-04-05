@@ -1,0 +1,64 @@
+- name: install tomcat
+  hosts: all
+  become: true
+  become_user: root
+  
+  vars:
+    JAVA_HOME: /usr/lib/jvm/java-17-openjdk-amd64
+    CATALINA_HOME: /opt/app/apache-tomcat-10.1.20
+
+  tasks:
+  - name: Install JDK
+    package: 
+      name: openjdk-17-jdk
+      state: present
+      update_cache: true
+    tags:
+      - without_pwd
+  - name: Download Tomcat Tar File
+    get_url:
+      url: https://dlcdn.apache.org/tomcat/tomcat-10/v10.1.20/bin/apache-tomcat-10.1.20.tar.gz
+      dest: /tmp
+    tags:
+      - without_pwd
+  - name: Create App Folder
+    file:
+      path: /opt/app
+      state: directory
+    tags:
+      - without_pwd
+  - name: Untar tomcat Tar file
+    unarchive:
+      src: /tmp/apache-tomcat-10.1.20.tar.gz
+      dest: /opt/app
+    tags:
+      - without_pwd
+  - name: Copy tomcat init script
+    template:
+      src: tomcat-init.j2
+      dest: /etc/init.d/tomcat
+      mode: 0755
+    tags:
+      - without_pwd
+    notify:
+    - Start Tomcat Service
+  - name: Copy tomcat-users.xml init script
+    template:
+      src: tomcat-users.xml.j2
+      dest: "{{ CATALINA_HOME }}/conf/tomcat-users.xml"
+    tags:
+      - with_pwd
+  - name: Copy manager-context.xml init script
+    copy:
+      src: manager-context.xml
+      dest: "{{ CATALINA_HOME }}/webapps/manager/META-INF/context.xml"
+    tags:
+      - without_pwd
+  handlers:
+  - name: Start Tomcat Service
+    service:
+      name: tomcat
+      state: restarted
+      daemon_reload: true
+    tags:
+      - without_pwd
